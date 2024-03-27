@@ -4,6 +4,15 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,12 +27,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults.buttonColors
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Scaffold
@@ -52,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.constraintlayout.compose.ChainStyle
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import androidx.constraintlayout.compose.Dimension
@@ -134,7 +146,7 @@ fun StyledText() {
         Font(R.font.comicneue_lightitalic, FontWeight.Light, FontStyle.Italic)
     )
     Text(
-        text = "Hello, Custom Font!",
+        text = "Hello, this is the font Comic Neue!",
         fontFamily = customFont,
         fontWeight = FontWeight.Bold,
         fontSize = 24.sp,
@@ -235,24 +247,26 @@ fun ConstraintLayoutExample() {
     val constrains = ConstraintSet {
         val greenBox = createRefFor("greenBox")
         val redBox = createRefFor("redBox")
-        val guideline = createGuidelineFromTop(0.5f)
+        val guideline = createGuidelineFromTop(190.dp)
 
         constrain(greenBox) {
             top.linkTo(guideline)
+            //top.linkTo(parent.top)
             start.linkTo(parent.start)
-            width = Dimension.value(100.dp)
-            height = Dimension.value(100.dp)
+            width = Dimension.value(80.dp)
+            height = Dimension.value(80.dp)
         }
         constrain(redBox) {
-            top.linkTo(parent.top)
+            top.linkTo(guideline)
             start.linkTo(greenBox.end)
-            width = Dimension.value(100.dp)
-            width = Dimension.fillToConstraints
-            height = Dimension.value(100.dp)
+            width = Dimension.value(80.dp)
+            //width = Dimension.fillToConstraints
+            height = Dimension.value(80.dp)
         }
-        createHorizontalChain(greenBox, redBox)
+        createHorizontalChain(greenBox, redBox, chainStyle = ChainStyle.Packed)
     }
     ConstraintLayout(
+        constrains,
         modifier = Modifier.fillMaxSize()
     ) {
         Box(
@@ -268,42 +282,78 @@ fun ConstraintLayoutExample() {
     }
 }
 
+//Effect Handler
+/*
+@Composable
+fun EffectHandler() {
+var text by remember { mutableStateOf("") }
+LaunchedEffect(key1 = text) {
+delay(1000L)
+println("Text is $text")
+}
+}
+*/
+
+@Composable
+fun SimpleAnimation() {
+    var sizeState by remember { mutableStateOf(200.dp) }
+    val size by animateDpAsState(
+        targetValue = sizeState,
+//        spring(Spring.DampingRatioHighBouncy, stiffness = 1000f),
+//        tween(durationMillis = 3000,
+//            delayMillis = 300,
+//            easing = LinearOutSlowInEasing), label = ""
+        keyframes {
+            durationMillis = 5000
+            sizeState at 0 with LinearEasing
+            sizeState * 1.5f at 1000 with FastOutLinearInEasing
+            sizeState * 2f at 500
+        },
+        label = ""
+    )
+    val infiniteTransition = rememberInfiniteTransition(label = "")
+    val color by infiniteTransition.animateColor(
+        initialValue = Color.Red,
+        targetValue = Color.Blue,
+        animationSpec = infiniteRepeatable(
+            tween(durationMillis = 2000),
+            repeatMode = RepeatMode.Reverse
+        ), label = ""
+    )
+
+    Box(
+        modifier = Modifier
+            .size(size)
+            .padding(16.dp)
+            .background(color),
+
+        contentAlignment = Alignment.Center)
+    {
+        Button(onClick = { sizeState += 50.dp },
+            colors = buttonColors(containerColor = Color.White, contentColor = Color.Black)) {
+            Text(fontSize = 16.sp, text = "Bigger")
+        }
+    }
+    
+}
+
 @Composable
 fun MainFunc(){
-    Column(modifier = Modifier
-        .verticalScroll(rememberScrollState())
-    ) {
-        Row {
-            GreetInput()
-        }
-        Row (
-            modifier = Modifier
-                .horizontalScroll(rememberScrollState())
-        )
-        {
-            ImageCard(
-                painterID = evilkermit,
-                title = "Evil Kermit")
-            ImageCard(
-                painterID = kermitdying,
-                title = "Kermit Dying")
-            ImageCard(
-                painterID = kermitfunny,
-                title = "Kermit Scrunch Face")
-            ImageCard(
-                painterID = guerillakermit,
-                title = "Guerilla Kermit")
-        }
-        Row {
-            StyledText()
-        }
-        Row {
-            ColorBox()
-            ColorBox()
-        }
-        Row {
-            ColorBox()
-            ColorBox()
-        }
+
+    LazyLists()
+    ConstraintLayoutExample()
+
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        Row (modifier = Modifier.horizontalScroll(rememberScrollState())){
+            ImageCard(painterID = evilkermit, title = "Evil Kermit")
+            ImageCard(painterID = kermitdying, title = "Kermit Dying")
+            ImageCard(painterID = kermitfunny, title = "Kermit Scrunch Face")
+            ImageCard(painterID = guerillakermit,title = "Guerilla Kermit") }
+
+        Row { StyledText() }
+        Row {ColorBox();ColorBox()}
+        Row {ColorBox();ColorBox()}
+        Row { GreetInput() }
+        Row { SimpleAnimation() }
     }
 }
