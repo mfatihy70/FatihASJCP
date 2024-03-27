@@ -5,13 +5,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.animateColor
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -54,6 +53,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -296,19 +296,13 @@ println("Text is $text")
 
 @Composable
 fun SimpleAnimation() {
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     var sizeState by remember { mutableStateOf(200.dp) }
+    var text by remember { mutableStateOf("Bigger") }
+
     val size by animateDpAsState(
         targetValue = sizeState,
-//        spring(Spring.DampingRatioHighBouncy, stiffness = 1000f),
-//        tween(durationMillis = 3000,
-//            delayMillis = 300,
-//            easing = LinearOutSlowInEasing), label = ""
-        keyframes {
-            durationMillis = 5000
-            sizeState at 0 with LinearEasing
-            sizeState * 1.5f at 1000 with FastOutLinearInEasing
-            sizeState * 2f at 500
-        },
+        spring(Spring.DampingRatioHighBouncy, stiffness = 1000f),
         label = ""
     )
     val infiniteTransition = rememberInfiniteTransition(label = "")
@@ -329,12 +323,24 @@ fun SimpleAnimation() {
 
         contentAlignment = Alignment.Center)
     {
-        Button(onClick = { sizeState += 50.dp },
-            colors = buttonColors(containerColor = Color.White, contentColor = Color.Black)) {
-            Text(fontSize = 16.sp, text = "Bigger")
+        Button(onClick = {
+            text = "Bigger"
+            if (sizeState > screenWidth) {
+                sizeState = 200.dp
+            } else {
+                sizeState += 50.dp
+            }
+            if (sizeState > screenWidth) {
+                text = "Now Smaller"
+            }
+        },
+            colors = buttonColors(
+                containerColor = Color.White,
+                contentColor = Color.Black))
+        {
+            Text(fontSize = 16.sp, text = text)
         }
     }
-    
 }
 
 @Composable
@@ -344,6 +350,8 @@ fun MainFunc(){
     ConstraintLayoutExample()
 
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        Row (horizontalArrangement = Arrangement.End,
+            modifier = Modifier.fillMaxWidth()){ SimpleAnimation() }
         Row (modifier = Modifier.horizontalScroll(rememberScrollState())){
             ImageCard(painterID = evilkermit, title = "Evil Kermit")
             ImageCard(painterID = kermitdying, title = "Kermit Dying")
@@ -354,6 +362,5 @@ fun MainFunc(){
         Row {ColorBox();ColorBox()}
         Row {ColorBox();ColorBox()}
         Row { GreetInput() }
-        Row { SimpleAnimation() }
     }
 }
