@@ -26,36 +26,72 @@ import com.example.fatihasjcp.R
 import kotlin.math.PI
 import kotlin.math.atan2
 
+@Composable
+fun VolumeBar(
+    modifier: Modifier = Modifier,
+    activeBars: Int = 0,
+    barCount: Int = 10
+) {
+    BoxWithConstraints(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+    ) {
+        val barWidth = remember {
+            constraints.maxWidth / (2f * barCount)
+        }
+        Canvas(modifier = modifier) {
+            for(i in 0 until barCount) {
+                drawRoundRect(
+                    color = if(i in 0..activeBars) Color.Green else Color.DarkGray,
+                    topLeft = Offset(i * barWidth * 2f + barWidth / 2f, 0f),
+                    size = Size(barWidth, constraints.maxHeight.toFloat()),
+                    cornerRadius = CornerRadius(0f)
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MusicKnob(
+    modifier: Modifier = Modifier,
     limitingAngle: Float = 25f,
     onValueChange: (Float) -> Unit
-){
-    var rotation by remember { mutableFloatStateOf(limitingAngle) }
-    var touchX by remember { mutableFloatStateOf(0f) }
-    var touchY by remember { mutableFloatStateOf(0f) }
-    var centerX by remember { mutableFloatStateOf(0f) }
-    var centerY by remember { mutableFloatStateOf(0f) }
+) {
+    var rotation by remember {
+        mutableFloatStateOf(limitingAngle)
+    }
+    var touchX by remember {
+        mutableFloatStateOf(0f)
+    }
+    var touchY by remember {
+        mutableFloatStateOf(0f)
+    }
+    var centerX by remember {
+        mutableFloatStateOf(0f)
+    }
+    var centerY by remember {
+        mutableFloatStateOf(0f)
+    }
 
-    Image(painter = painterResource(id = R.drawable.knob),
-        contentDescription = "Knob",
-        modifier = Modifier
+    Image(
+        painter = painterResource(id = R.drawable.music_knob),
+        contentDescription = "Music knob",
+        modifier = modifier
             .fillMaxSize()
             .onGloballyPositioned {
                 val windowBounds = it.boundsInWindow()
-                centerX = windowBounds.size.width / 2
-                centerY = windowBounds.size.height / 2
+                centerX = windowBounds.size.width / 2f
+                centerY = windowBounds.size.height / 2f
             }
             .pointerInteropFilter { event ->
                 touchX = event.x
                 touchY = event.y
-                val angle =
-                    -atan2(centerY - touchY, touchX - centerX) *
-                            (PI / 180f).toFloat()
-
+                val angle = -atan2(centerX - touchX, centerY - touchY) * (180f / PI).toFloat()
 
                 when (event.action) {
+                    MotionEvent.ACTION_DOWN,
                     MotionEvent.ACTION_MOVE -> {
                         if (angle !in -limitingAngle..limitingAngle) {
                             val fixedAngle = if (angle in -180f..-limitingAngle) {
@@ -64,40 +100,15 @@ fun MusicKnob(
                                 angle
                             }
                             rotation = fixedAngle
-                            val percent = (rotation + limitingAngle) / (360f - 2 * limitingAngle)
+
+                            val percent = (fixedAngle - limitingAngle) / (360f - 2 * limitingAngle)
                             onValueChange(percent)
                             true
                         } else false
                     }
-
                     else -> false
                 }
             }
             .rotate(rotation)
     )
-}
-
-@Composable
-fun VolumeBar(
-    modifier: Modifier = Modifier,
-    activeBars: Int = 0,
-    totalBars: Int = 10
-){
-    BoxWithConstraints (
-        contentAlignment = Alignment.Center,
-        modifier = modifier)
-    {
-
-        val barWidth = remember { maxWidth / (2f * totalBars) }
-        Canvas(modifier = Modifier) {
-            for (i in 0 until totalBars) {
-                drawRoundRect(
-                    color = if (i in 0 until activeBars) Color.Black else Color.Gray,
-                    topLeft = Offset(i.toFloat() * barWidth.value * 2f + barWidth.value / 2f, 0f),
-                    size = Size(barWidth.value, size.height),
-                    cornerRadius = CornerRadius(0f)
-                )
-            }
-        }
-    }
 }
